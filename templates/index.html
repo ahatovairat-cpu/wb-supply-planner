@@ -1,0 +1,1635 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>StockPilot</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f5f5f3;color:#1a1a1a;font-size:14px;display:flex;min-height:100vh}
+.sidebar{position:sticky;top:0;flex-shrink:0;width:220px;height:100vh;background:#fff;border-right:1px solid #e8e8e5;padding:20px 0;overflow-y:auto}
+.main{flex:1;min-width:0;padding:20px 24px}
+.logo{padding:0 20px 20px;font-size:16px;font-weight:600;border-bottom:1px solid #e8e8e5;margin-bottom:12px}
+.logo span{color:#888;font-size:11px;display:block;font-weight:400;margin-top:2px}
+.nav-item{display:flex;align-items:center;gap:10px;padding:9px 20px;cursor:pointer;color:#555;font-size:13px;border-left:3px solid transparent}
+.nav-item:hover{background:#f5f5f3;color:#1a1a1a}
+.nav-item.active{color:#1a1a1a;font-weight:500;border-left-color:#1a1a1a;background:#f5f5f3}
+.nav-icon{width:16px;text-align:center;font-size:14px}
+.page{display:none}.page.active{display:block}
+.page-title{font-size:20px;font-weight:600;margin-bottom:6px}
+.page-sub{color:#888;font-size:13px;margin-bottom:24px}
+.card{background:#fff;border:1px solid #e8e8e5;border-radius:12px;padding:20px;margin-bottom:16px;max-width:100%;overflow:hidden}
+.card-title{font-size:12px;font-weight:500;color:#888;text-transform:uppercase;letter-spacing:.05em;margin-bottom:14px}
+.metric-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;margin-bottom:16px}
+.metric{background:#f9f9f8;border-radius:10px;padding:12px 14px}
+.metric-label{font-size:11px;color:#999;margin-bottom:5px}
+.metric-value{font-size:20px;font-weight:600}
+.red{color:#c0392b}.amber{color:#d68910}.green{color:#27ae60}
+label{display:block;font-size:12px;color:#888;margin-bottom:4px}
+input,select{width:100%;padding:7px 10px;border:1px solid #ddd;border-radius:8px;font-size:13px;background:#fff;color:#1a1a1a;outline:none}
+input:focus,select:focus{border-color:#999}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px}
+.g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:12px}
+.g4{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:10px;margin-bottom:12px}
+.btn{padding:7px 16px;border-radius:8px;border:1px solid #ddd;background:#fff;font-size:13px;cursor:pointer;color:#1a1a1a;font-family:inherit}
+.btn:hover{background:#f5f5f3}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.btn-p{background:#1a1a1a;color:#fff;border-color:#1a1a1a}
+.btn-p:hover{background:#333}
+.btn-sm{padding:5px 12px;font-size:12px}
+.btn-row{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+table{width:100%;border-collapse:collapse;table-layout:auto}
+th{font-size:11px;font-weight:500;color:#999;text-align:left;padding:6px 8px;border-bottom:1px solid #e8e8e5;white-space:nowrap}
+td{padding:7px 8px;border-bottom:1px solid #f0f0ee;vertical-align:middle;font-size:13px}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:#fafaf8}
+.mono{font-family:'SF Mono',monospace;font-size:12px}
+.badge{display:inline-block;padding:2px 7px;border-radius:5px;font-size:11px;font-weight:500}
+.b-ok{background:#e8f5e9;color:#2e7d32}
+.b-warn{background:#fef3cd;color:#9a6700}
+.b-danger{background:#fde8e8;color:#c0392b}
+.b-gray{background:#f0f0ee;color:#888}
+.b-blue{background:#e3f2fd;color:#1565c0}
+.b-overstock{background:#f3e5f5;color:#7b2d8b}
+.pbar{height:5px;background:#f0f0ee;border-radius:3px;overflow:hidden}
+.pbar-fill{height:100%;border-radius:3px;background:#1a1a1a}
+.alert{padding:11px 14px;border-radius:8px;font-size:13px;margin-bottom:14px}
+.a-info{background:#e3f2fd;color:#1565c0}
+.a-ok{background:#e8f5e9;color:#2e7d32}
+.a-err{background:#fde8e8;color:#c0392b}
+.sticky{position:sticky;top:0;background:#f5f5f3;padding:14px 0 10px;z-index:50;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:8px}
+.filter-bar{display:flex;gap:6px;margin-bottom:14px;flex-wrap:wrap;align-items:center}
+.fbtn{padding:4px 12px;border-radius:20px;border:1px solid #ddd;background:#fff;font-size:12px;cursor:pointer;color:#555}
+.fbtn.active{background:#1a1a1a;color:#fff;border-color:#1a1a1a}
+.tabs{display:flex;border-bottom:1px solid #e8e8e5;margin-bottom:18px}
+.tab-btn{padding:8px 16px;border:none;background:none;font-size:13px;cursor:pointer;color:#888;border-bottom:2px solid transparent;margin-bottom:-1px;font-family:inherit}
+.tab-btn.active{color:#1a1a1a;border-bottom-color:#1a1a1a;font-weight:500}
+.editable{border:1px solid #e8e8e5;background:#fff;font-size:12px;font-family:inherit;width:55px;text-align:right;cursor:pointer;border-radius:4px;padding:2px 4px}
+.editable:focus{outline:none;border-color:#999;background:#fff}
+.spinner{display:inline-block;width:14px;height:14px;border:2px solid #ddd;border-top-color:#1a1a1a;border-radius:50%;animation:spin .7s linear infinite;vertical-align:middle}
+@keyframes spin{to{transform:rotate(360deg)}}
+.step-row{display:flex;align-items:center;gap:10px;padding:9px 0;font-size:13px;border-bottom:0.5px solid #f0f0ee;color:#aaa}
+.step-row:last-child{border-bottom:none}
+.step-row.s-done{color:#2e7d32}
+.step-row.s-loading{color:#1a1a1a;font-weight:500}
+.step-row.s-error{color:#c0392b}
+.token-wrap{max-width:500px;margin:40px auto}
+.tbl-wrap{overflow-x:auto;max-width:100%}
+.score{display:inline-flex;align-items:center;justify-content:center;width:30px;height:30px;border-radius:50%;font-size:12px;font-weight:600}
+.sc-hi{background:#e8f5e9;color:#2e7d32}
+.sc-mid{background:#fef3cd;color:#9a6700}
+.sc-lo{background:#fde8e8;color:#c0392b}
+.wh-dist{display:flex;flex-direction:column;gap:3px}
+.wh-row{display:flex;align-items:center;gap:6px;font-size:12px}
+.wh-name{min-width:90px;color:#555;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.wh-qty{font-weight:600;min-width:30px;text-align:right}
+.empty{text-align:center;padding:32px;color:#aaa;font-size:13px}
+</style>
+</head>
+<body>
+
+<div class="sidebar">
+  <div class="logo">StockPilot<span>v1.0</span></div>
+  <div class="nav-item active" onclick="nav('connect')" id="nav-connect"><span class="nav-icon">🔑</span> Подключение</div>
+  <div class="nav-item" onclick="nav('products')" id="nav-products"><span class="nav-icon">📦</span> Товары</div>
+  <div class="nav-item" onclick="nav('plan')" id="nav-plan"><span class="nav-icon">📋</span> План закупок</div>
+  <div class="nav-item" onclick="nav('shipment')" id="nav-shipment"><span class="nav-icon">🚚</span> План отгрузок</div>
+
+</div>
+
+<div class="main">
+
+<!-- CONNECT -->
+<div class="page active" id="page-connect">
+  <div class="token-wrap">
+    <div class="card">
+      <div style="font-size:22px;font-weight:700;margin-bottom:6px">StockPilot</div>
+      <div style="color:#888;font-size:13px;margin-bottom:20px">Введите API-токен Wildberries</div>
+      <div id="connect-alert"></div>
+      <div style="margin-bottom:12px">
+        <label>API-токен (раздел «Статистика»)</label>
+        <input type="password" id="token-input" placeholder="eyJh...">
+      </div>
+      <div class="g2">
+        <div>
+          <label>Период анализа</label>
+          <div style="display:flex;gap:8px;align-items:center">
+            <select id="period-select" style="width:160px;font-size:13px" onchange="updatePeriodDates()">
+              <option value="28">4 недели (28 дн)</option>
+              <option value="56">8 недель (56 дн)</option>
+              <option value="84">12 недель (84 дн)</option>
+            </select>
+            <span style="font-size:12px;color:#888" id="period-dates"></span>
+          </div>
+        </div>
+        <div style="display:flex;align-items:flex-end">
+          <button class="btn btn-p" style="width:100%" onclick="connectAndLoad()" id="connect-btn">
+            <span id="connect-btn-text">Подключить</span>
+          </button>
+        </div>
+      </div>
+      <div style="margin-top:16px;padding-top:14px;border-top:1px solid #e8e8e5;font-size:12px;color:#999">
+        ЛК WB → Настройки → Доступ к API → Статистика
+      </div>
+    </div>
+
+    <div id="load-status" class="card" style="display:none">
+      <div class="card-title">Статус подключения</div>
+      <div id="step-token"  class="step-row">⏳ <span>Проверка токена</span></div>
+      <div id="step-sales"  class="step-row">⏳ <span>Продажи за период</span></div>
+      <div id="step-stocks" class="step-row">⏳ <span>Остатки по складам</span></div>
+      <div id="step-orders" class="step-row">⏳ <span>Заказы и локализация</span></div>
+      <div id="load-summary" style="display:none;margin-top:14px;padding:12px;background:#e8f5e9;border-radius:8px;font-size:13px;color:#2e7d32"></div>
+    </div>
+
+    <div id="connected-status" class="card" style="display:none">
+      <div class="card-title">Подключено</div>
+      <div id="connected-info"></div>
+    </div>
+  </div>
+</div>
+
+<!-- PLAN -->
+<div class="page" id="page-plan">
+  <div class="sticky">
+    <div>
+      <div class="page-title">План закупок</div>
+      <div class="page-sub" id="plan-sub">Загрузите данные</div>
+    </div>
+    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+      <div style="display:flex;align-items:center;gap:6px">
+        <span style="font-size:12px;color:#888;white-space:nowrap">Период:</span>
+        <button class="fbtn" id="hz-14"  onclick="setHorizon(14,this)">14 дн</button>
+        <button class="fbtn" id="hz-30"  onclick="setHorizon(30,this)">30 дн</button>
+        <button class="fbtn active" id="hz-60"  onclick="setHorizon(60,this)">60 дн</button>
+        <button class="fbtn" id="hz-90"  onclick="setHorizon(90,this)">90 дн</button>
+        <input type="number" id="hz-custom" min="1" max="365" placeholder="дней"
+          style="width:68px;padding:4px 8px;border-radius:8px;font-size:12px"
+          onchange="setHorizonCustom(this.value)"
+          title="Введите произвольное количество дней">
+      </div>
+      <button class="btn btn-sm" onclick="toggleSettings()">⚙ Параметры</button>
+      <button class="btn btn-p btn-sm" onclick="calcPlan()">Пересчитать</button>
+    </div>
+  </div>
+
+  <div class="card" id="plan-settings" style="display:none">
+    <div class="card-title">Параметры расчёта</div>
+    <div class="g4">
+      <!-- горизонт синхронизируется с периодом -->
+      <input type="hidden" id="p-horizon" value="30">
+      <div><label>Плечо по умолчанию (дней)</label><input type="number" id="p-lead" value="2" min="1" max="120"></div>
+
+  
+    </div>
+    <div class="g2">
+      <div><label>Мин. партия (шт)</label><input type="number" id="p-minorder" value="1" min="1"></div>
+      <div><label>Страховой запас (дней)</label><input type="number" id="p-safety" value="3" min="0" max="30"></div>
+    </div>
+    <div style="display:flex;justify-content:flex-end;margin-top:8px">
+        <button class="btn btn-p" onclick="calcPlan();document.getElementById('plan-settings').style.display='none'">Рассчитать</button>
+    </div>
+  </div>
+
+  <div class="metric-grid" id="plan-metrics" style="display:none">
+    <div class="metric"><div class="metric-label">Срочно (&lt;7 дн)</div><div class="metric-value red" id="m-danger">—</div></div>
+    <div class="metric"><div class="metric-label">Скоро (7–14 дн)</div><div class="metric-value amber" id="m-warn">—</div></div>
+    <div class="metric"><div class="metric-label">Пересорт (&gt;30 дн)</div><div class="metric-value" style="color:#7b2d8b" id="m-overstock">—</div></div>
+    <div class="metric"><div class="metric-label">Всего шт</div><div class="metric-value" id="m-qty">—</div></div>
+    <div class="metric"><div class="metric-label">Сумма ₽</div><div class="metric-value" id="m-sum">—</div></div>
+  </div>
+
+  <div class="filter-bar">
+    <button class="fbtn active" onclick="filterPlan('all',this)">Все</button>
+    <button class="fbtn" onclick="filterPlan('danger',this)">🔴 Срочно</button>
+    <button class="fbtn" onclick="filterPlan('warn',this)">🟡 Скоро</button>
+    <button class="fbtn" onclick="filterPlan('ok',this)">🟢 В норме</button>
+    <button class="fbtn" onclick="filterPlan('overstock',this)">🟣 Пересорт</button>
+    <input type="text" id="plan-search" oninput="renderPlan()" placeholder="Поиск..." style="width:180px;padding:4px 10px;border-radius:20px;font-size:12px">
+  </div>
+
+  <div class="card" style="padding:0">
+    <div class="tbl-wrap" style="padding:0 12px">
+      <table>
+        <thead><tr>
+          <th style="width:90px;color:#2e7d32;font-size:11px;text-align:center">
+            <div style="margin-bottom:4px">Согласовано</div>
+            <input type="checkbox" id="plan-sel-all" onchange="planSelectAll(this)" title="Выбрать все" style="width:auto">
+          </th>
+          <th>Артикул</th><th>Название</th><th>Источник</th><th>Плечо</th>
+          <th>Заказ/д</th><th>Остаток</th><th>На ФФ</th><th>Дней</th><th>Статус</th>
+          <th>Выкуп %</th><th>Заказать</th><th>Кратность</th><th>Коробов</th><th>Себест.</th><th>Сумма</th>
+          <th>Остатки по складам</th>
+        </tr></thead>
+        <tbody id="plan-body"><tr><td colspan="17" class="empty">Нажмите «Пересчитать»</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+
+
+  <div class="btn-row" style="margin-bottom:8px">
+    <button class="btn" onclick="exportPlanCSV()">Экспорт CSV</button>
+  </div>
+
+  <div id="approved-totals" class="card" style="display:none">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px">
+      <div class="card-title" style="margin:0">✓ Согласованные позиции</div>
+      <button class="btn btn-sm" onclick="exportApprovedCSV()">Экспорт согласованных</button>
+    </div>
+    <div id="approved-totals-body"></div>
+  </div>
+</div>
+
+<!-- SHIPMENT -->
+<div class="page" id="page-shipment">
+  <div class="sticky">
+    <div>
+      <div class="page-title">Планы закупок и отгрузок</div>
+      <div class="page-sub">Распределение по складам для максимальной локализации</div>
+    </div>
+    <div style="display:flex;align-items:center;gap:10px">
+      <input type="hidden" id="ship-target" value="60">
+      <button class="btn btn-p btn-sm" onclick="calcPlanAndShip()">Рассчитать</button>
+      <button class="btn btn-sm" onclick="loadRealLogistics()" id="btn-logistics">📊 Логистика из финотчёта</button>
+      <button class="btn btn-sm" onclick="exportShipCSV()">CSV</button>
+    </div>
+  </div>
+
+  <div id="shipment-alert" class="alert a-info">Нажмите «Рассчитать» — план закупок и распределение по складам посчитаются автоматически</div>
+
+
+  <div id="shipment-content" style="display:none">
+
+
+    <div id="st-ship">
+      <div class="card" style="padding:0">
+        <div class="tbl-wrap" style="padding:0 12px">
+          <table>
+            <thead><tr>
+              <th>Артикул</th><th>Название</th><th>К отгрузке (закупка+ФФ)</th>
+              <th>Склад WB</th><th>На складе WB</th><th>К отгрузке на склад</th><th>Прогноз логистики ₽</th><th>Статус</th>
+            </tr></thead>
+            <tbody id="ship-body"><tr><td colspan="8" class="empty">Нет данных</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <div id="wh-summary" class="card" style="display:none;margin-top:16px">
+      <div class="card-title" style="display:flex;justify-content:space-between;align-items:center">
+        <span>📦 Сводка по складам</span>
+        <button class="btn btn-sm" onclick="exportWhSummaryCSV()">Экспорт CSV</button>
+      </div>
+      <div id="wh-summary-body"></div>
+    </div>
+
+        </div>
+  </div>
+</div>
+
+<div class="page" id="page-warehouses">
+  <div class="sticky">
+    <div>
+      <div class="page-title">Параметры складов</div>
+      <div class="page-sub">Тарифы WB на 25.03.2026</div>
+    </div>
+    <button class="btn btn-p btn-sm" onclick="saveWh()">Сохранить</button>
+  </div>
+  <div id="wh-alert" class="alert a-info">Загрузите данные — склады подтянутся автоматически</div>
+  <div class="card" style="padding:0">
+    <div class="tbl-wrap">
+      <table>
+        <thead><tr>
+          <th>Склад</th><th>Приёмка</th><th>Логист. ₽/1л</th><th>Логист. ₽/доп.л</th>
+          <th>Хранение ₽/шт/д</th><th>Коэф. лог.</th><th>Возвраты %</th><th>Дней до покуп.</th><th>Рейтинг</th>
+        </tr></thead>
+        <tbody id="wh-body"><tr><td colspan="9" class="empty">Нет данных</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+
+<!-- PRODUCTS -->
+<div class="page" id="page-products">
+  <div class="sticky">
+    <div>
+      <div class="page-title">Товары и себестоимость</div>
+      <div class="page-sub" id="products-sub">Укажите себестоимость, источник и плечо поставки</div>
+      <div style="font-size:11px;color:#aaa;margin-top:2px">Импорт себестоимости и остатков ФФ из Excel (.xlsx)</div>
+    </div>
+    <div style="display:flex;gap:8px">
+      <button class="btn btn-sm" id="btn-min-sales" onclick="toggleMinSales()">Скрыть &lt;30 продаж</button>
+      <button class="btn btn-sm" onclick="document.getElementById('xlsx-import-input').click()">📥 Загрузить Excel</button>
+      <input type="file" id="xlsx-import-input" accept=".xlsx,.xls,.csv" style="display:none" onchange="importPricesFile(this)">
+      <button class="btn btn-p btn-sm" onclick="saveSkus()">Сохранить</button>
+    </div>
+  </div>
+
+  <div class="filter-bar">
+    <button class="fbtn active" onclick="filterProds('active',this)">Активные</button>
+    <button class="fbtn" onclick="filterProds('archived',this)">Скрытые</button>
+    <button class="fbtn" onclick="filterProds('all',this)">Все</button>
+    <input type="text" id="prod-search" oninput="renderProds()" placeholder="Поиск..." style="width:180px;padding:4px 10px;border-radius:20px;font-size:12px">
+    <span id="prod-count" style="font-size:12px;color:#999"></span>
+  </div>
+
+  <div class="card" style="padding:0">
+    <div class="tbl-wrap" style="padding:0 12px">
+      <table>
+        <thead><tr>
+          <th>Артикул WB</th><th>Название (артикул продавца)</th><th>Заказы</th><th>Темп заказов</th><th>Темп продаж</th><th>Остаток</th><th>Дней</th>
+          <th>Выкуп %</th><th>Объём, л</th><th>Логистика ₽</th><th>Себест. ₽</th><th>На ФФ</th><th>Источник</th><th>Плечо дн</th><th>Кратность</th><th></th>
+        </tr></thead>
+        <tbody id="prod-body"><tr><td colspan="15" class="empty">Нет данных</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div id="bulk-bar" class="card" style="display:none;padding:12px 20px">
+    <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+      <span id="sel-count" style="font-size:13px;color:#888"></span>
+      <button class="btn btn-sm" onclick="bulkArchive(true)">Скрыть выбранные</button>
+      <button class="btn btn-sm" onclick="bulkArchive(false)">Показать выбранные</button>
+    </div>
+  </div>
+</div>
+
+<!-- RECOMMENDATIONS -->
+<div class="page" id="page-recommend">
+  <div class="sticky">
+    <div>
+      <div class="page-title">Рекомендации складов</div>
+      <div class="page-sub" id="rec-sub">Оптимальное распределение для ИЛ &lt; 1 и ИРП = 0%</div>
+    </div>
+  </div>
+
+  <div id="rec-alert" class="alert a-info">Загрузите данные и нажмите «Рассчитать»</div>
+
+  <div id="rec-content" style="display:none">
+    <div class="metric-grid" id="rec-metrics" style="margin-bottom:16px">
+      <div class="metric"><div class="metric-label">Уже оптимальны</div><div class="metric-value green" id="rm-ok">—</div></div>
+      <div class="metric"><div class="metric-label">Нужна корректировка</div><div class="metric-value amber" id="rm-warn">—</div></div>
+      <div class="metric"><div class="metric-label">Критично (&lt;30%)</div><div class="metric-value red" id="rm-crit">—</div></div>
+    </div>
+
+    <div class="filter-bar">
+      <button class="fbtn active" onclick="filterRec('all',this)">Все</button>
+      <button class="fbtn" onclick="filterRec('bad',this)">Требуют улучшения</button>
+      <button class="fbtn" onclick="filterRec('critical',this)">Критичные</button>
+      <input type="text" id="rec-search" oninput="renderRec()" placeholder="Поиск..." style="width:180px;padding:4px 10px;border-radius:20px;font-size:12px">
+    </div>
+
+    <div id="rec-body"></div>
+  </div>
+</div>
+
+</div><!-- /main -->
+
+<script>
+// ═══ STATE ═══
+var skusData = [];
+var planData = [];
+var realLogisticsLoaded = false;
+var whParams = {};
+var approvedSkus = new Set();
+var planFilter = 'all';
+var prodFilter = 'active';
+var hideMinSales = true;  // по умолчанию скрываем < 10 продаж
+var selectedSkus = new Set();
+
+// ═══ NAVIGATION ═══
+function updatePeriodDates() {
+  var days = parseInt(document.getElementById('period-select').value) || 28;
+  var now  = new Date();
+  var from = new Date(now - days * 86400000);
+  var fmt  = function(d){ return d.getDate()+'.'+(d.getMonth()+1)+'.'+d.getFullYear(); };
+  var el   = document.getElementById('period-dates');
+  if(el) el.textContent = fmt(from) + ' — ' + fmt(now);
+  // Синхронизируем горизонт плана
+  var h = document.getElementById('p-horizon');
+  if(h) h.value = days;
+}
+
+function syncPeriodDays() {
+  updatePeriodDates();
+}
+
+function nav(name) {
+  document.querySelectorAll('.page').forEach(function(p){ p.classList.remove('active'); });
+  document.querySelectorAll('.nav-item').forEach(function(n){ n.classList.remove('active'); });
+  document.getElementById('page-'+name).classList.add('active');
+  document.getElementById('nav-'+name).classList.add('active');
+}
+
+// ═══ CONNECT ═══
+async function connectAndLoad() {
+  var token = document.getElementById('token-input').value.trim();
+  if (!token) { showAlert('connect-alert', 'Введите токен', 'err'); return; }
+  realLogisticsLoaded = false;
+
+  var btn = document.getElementById('connect-btn');
+  btn.disabled = true;
+  document.getElementById('connect-btn-text').innerHTML = '<span class="spinner"></span>';
+  document.getElementById('load-status').style.display = 'block';
+  document.getElementById('connected-status').style.display = 'none';
+  document.getElementById('connect-alert').style.display = 'none';
+  document.getElementById('load-summary').style.display = 'none';
+
+  resetStep('token'); resetStep('sales'); resetStep('stocks'); resetStep('orders'); 
+  setStep('token', 'loading', 'Проверяем токен...');
+  var r1 = await api('/api/check_token', {token: token});
+  if (!r1.ok) {
+    setStep('token', 'error', 'Ошибка: ' + (r1.error || 'неверный токен'));
+    btn.disabled = false;
+    document.getElementById('connect-btn-text').textContent = 'Подключить';
+    showAlert('connect-alert', r1.error || 'Неверный токен', 'err');
+    return;
+  }
+  setStep('token', 'done', 'Токен подтверждён ✓');
+
+  setStep('sales',  'loading', 'Загружаем продажи...');
+  setStep('stocks', 'loading', 'Загружаем остатки...');
+  setStep('orders', 'loading', 'Загружаем заказы...');
+  
+  var days = document.getElementById('period-select').value;
+  var r2 = await api('/api/load_data', {days: parseInt(days)});
+
+  if (!r2.ok) {
+    setStep('sales', 'error', 'Ошибка: ' + (r2.error || 'не удалось загрузить'));
+    btn.disabled = false;
+    document.getElementById('connect-btn-text').textContent = 'Попробовать снова';
+    return;
+  }
+
+  var s = r2.summary;
+  setStep('sales',  'done', 'Продажи: ' + s.total_sales.toLocaleString('ru') + ' шт, ' + s.skus + ' арт.');
+  setStep('stocks', 'done', 'Остатки: ' + s.total_stock.toLocaleString('ru') + ' шт, ' + s.warehouses + ' складов');
+  setStep('orders', 'done', 'Заказы и локализация загружены');
+  
+  var sum = document.getElementById('load-summary');
+  sum.style.display = 'block';
+  sum.textContent = '✓ Загружено успешно • период: ' + days + ' дней • ' + new Date().toLocaleTimeString('ru');
+
+  btn.disabled = false;
+  document.getElementById('connect-btn-text').textContent = 'Обновить данные';
+
+  await loadSkus();
+  await loadWhParams();
+
+  var info = document.getElementById('connected-info');
+  info.innerHTML = '<div class="metric-grid" style="margin-bottom:8px">' +
+    '<div class="metric"><div class="metric-label">Артикулов</div><div class="metric-value" style="font-size:18px">' + s.skus + '</div></div>' +
+    '<div class="metric"><div class="metric-label">Складов</div><div class="metric-value" style="font-size:18px">' + s.warehouses + '</div></div>' +
+    '<div class="metric"><div class="metric-label">Продажи</div><div class="metric-value" style="font-size:18px">' + s.total_sales.toLocaleString('ru') + '</div></div>' +
+    '<div class="metric"><div class="metric-label">Остаток</div><div class="metric-value" style="font-size:18px">' + s.total_stock.toLocaleString('ru') + '</div></div>' +
+    '</div><div style="font-size:12px;color:#999">Обновлено: ' + new Date().toLocaleString('ru') + '</div>';
+  document.getElementById('connected-status').style.display = 'block';
+}
+
+function setStep(id, state, text) {
+  var el = document.getElementById('step-'+id);
+  if (!el) return;
+  var icon = state === 'loading' ? '<span class="spinner"></span>' : state === 'done' ? '✅' : state === 'error' ? '❌' : '⏳';
+  el.className = 'step-row' + (state === 'done' ? ' s-done' : state === 'loading' ? ' s-loading' : state === 'error' ? ' s-error' : '');
+  el.innerHTML = icon + ' <span>' + text + '</span>';
+}
+
+function resetStep(id) {
+  var labels = {token:'Проверка токена', sales:'Продажи за период', stocks:'Остатки по складам', orders:'Заказы и локализация', };
+  var el = document.getElementById('step-'+id);
+  if (!el) return;
+  el.className = 'step-row';
+  el.innerHTML = '⏳ <span>' + (labels[id]||id) + '</span>';
+}
+
+// ═══ LOAD SKUs ═══
+async function loadSkus() {
+  var r = await fetch('/api/get_skus');
+  var data = await r.json();
+  if (!data.ok) return;
+  skusData = data.skus;
+  // Проставляем lead_days по умолчанию если не задан
+  skusData.forEach(function(s) {
+    if (!s.lead_days || s.lead_days === 14) {
+      s.lead_days = (s.source === 'Китай') ? 30 : 2;
+    }
+    if (!s.box_qty) s.box_qty = 1;
+    if (!s.ff_stock) s.ff_stock = 0;
+    if (s.buyout_rate === undefined) s.buyout_rate = 100;
+  });
+  renderProds();
+
+  document.getElementById('plan-sub').textContent = skusData.length + ' артикулов • нажмите «Пересчитать»';
+  document.getElementById('products-sub').textContent = 'Активных: ' + skusData.filter(function(s){return !s.archived;}).length;
+}
+
+// ═══ WAREHOUSES ═══
+async function loadWhParams() {
+  var r = await fetch('/api/get_warehouse_params');
+  var data = await r.json();
+  if (!data.ok) return;
+  whParams = data.params;
+  renderWh();
+  document.getElementById('wh-alert').style.display = 'none';
+}
+
+function renderWh() {
+  var whs = Object.keys(whParams);
+  if (!whs.length) return;
+  var html = whs.map(function(wh) {
+    var p = whParams[wh];
+    var score = Math.round(Math.max(0,100-(p.storage_cost||2)*20)*0.4 + Math.max(0,100-((p.wb_logistics_coef||1)-1)*50)*0.35 + Math.max(0,100-(p.return_rate||10)*2)*0.25);
+    var sc = score >= 70 ? 'sc-hi' : score >= 50 ? 'sc-mid' : 'sc-lo';
+    var accept = p.accepts !== false ? '<span class="badge b-ok">Бесплатно</span>' : '<span class="badge b-danger">Недоступна</span>';
+    return '<tr>' +
+      '<td><b>'+wh+'</b></td>' +
+      '<td>'+accept+'</td>' +
+      '<td><input class="editable" type="number" step="0.1" value="'+(p.logistics_first||0)+'" onchange="setWh(\''+wh+'\',\'logistics_first\',this.value)"></td>' +
+      '<td><input class="editable" type="number" step="0.1" value="'+(p.logistics_extra||0)+'" onchange="setWh(\''+wh+'\',\'logistics_extra\',this.value)"></td>' +
+      '<td><input class="editable" type="number" step="0.01" value="'+(p.storage_cost||0)+'" onchange="setWh(\''+wh+'\',\'storage_cost\',this.value)"></td>' +
+      '<td>'+(p.wb_logistics_coef||1)+'</td>' +
+      '<td><input class="editable" type="number" step="1" value="'+(p.return_rate||10)+'" onchange="setWh(\''+wh+'\',\'return_rate\',this.value)"></td>' +
+      '<td><input class="editable" type="number" step="0.5" value="'+(p.lead_days||2)+'" onchange="setWh(\''+wh+'\',\'lead_days\',this.value)"></td>' +
+      '<td><span class="score '+sc+'">'+score+'</span></td>' +
+      '</tr>';
+  }).join('');
+  document.getElementById('wh-body').innerHTML = html;
+}
+
+function setWh(wh, key, val) {
+  if (!whParams[wh]) whParams[wh] = {};
+  whParams[wh][key] = key === 'accepts' ? val : parseFloat(val);
+}
+
+async function saveWh() {
+  await api('/api/save_warehouse_params', {params: whParams});
+  toast('Склады сохранены');
+}
+
+// ═══ PLAN ═══
+function setHorizon(days, btn) {
+  document.getElementById('p-horizon').value = days;
+  document.getElementById('hz-custom').value = '';
+  document.querySelectorAll('[id^="hz-"]').forEach(function(b){ b.classList.remove('active'); });
+  if (btn) btn.classList.add('active');
+}
+
+function setHorizonCustom(val) {
+  var days = parseInt(val);
+  if (!days || days < 1) return;
+  document.getElementById('p-horizon').value = days;
+  document.querySelectorAll('[id^="hz-14"],[id^="hz-30"],[id^="hz-60"],[id^="hz-90"]').forEach(function(b){ b.classList.remove('active'); });
+}
+
+function toggleSettings() {
+  var el = document.getElementById('plan-settings');
+  el.style.display = el.style.display === 'none' ? 'block' : 'none';
+}
+
+async function calcPlanAndShip() {
+  await calcPlan(); // calcPlan автоматически вызывает loadRecommendations
+}
+
+async function loadRealLogistics() {
+  var btn = document.getElementById('btn-logistics');
+  btn.textContent = '⏳ Загрузка...';
+  btn.disabled = true;
+  try {
+    var r = await api('/api/load_report_logistics', {});
+    if (r.ok) {
+      toast('Логистика загружена: ' + r.updated + ' артикулов');
+      realLogisticsLoaded = true;
+      // Обновляем skusData через GET
+      try {
+        var skuResp = await fetch('/api/get_skus');
+        var skuR = await skuResp.json();
+        if (skuR.ok) {
+          skusData = skuR.skus;
+          renderProds();
+        }
+      } catch(e) {}
+      // Пересчитываем план
+      if (planData.length > 0) {
+        await calcPlanAndShip();
+      }
+    } else {
+      toast(r.error || 'Ошибка загрузки логистики');
+    }
+  } catch(e) {
+    toast('Ошибка: ' + e.message);
+  }
+  btn.textContent = '📊 Логистика из финотчёта';
+  btn.disabled = false;
+}
+
+async function calcPlan() {
+  if (!skusData.length) { toast('Сначала загрузите данные'); return; }
+  await api('/api/save_warehouse_params', {params: whParams});
+
+  // Сохраняем все параметры товаров перед расчётом
+  var skuParams = {};
+  skusData.forEach(function(s){
+    skuParams[s.sku] = {cost: s.cost||0, archived: !!s.archived, source: s.source||'Россия',
+      lead_days: s.lead_days||2, box_qty: s.box_qty||1, ff_stock: s.ff_stock||0};
+  });
+  await api('/api/save_sku_params', {params: skuParams});
+
+  var hzEl = document.getElementById('p-horizon');
+  var moEl = document.getElementById('p-minorder');
+  var sfEl = document.getElementById('p-safety');
+  
+  var r = await api('/api/calc_plan', {
+    horizon:     parseInt(hzEl && hzEl.value) || 30,
+    growth_pct:  0,
+    min_order:   parseInt(moEl && moEl.value) || 1,
+    safety_days: parseInt(sfEl && sfEl.value) || 3
+  });
+  if (!r.ok) { toast(r.error); return; }
+
+  planData = r.plan;
+  approvedSkus.clear();
+  // Добавляем box_qty из skusData в каждый элемент плана
+  planData.forEach(function(p) {
+    var s = skusData.find(function(s){ return s.sku === p.sku; });
+    p.box_qty = s ? (s.box_qty||1) : 1;
+  });
+  var t = r.totals;
+
+  document.getElementById('plan-metrics').style.display = 'grid';
+  document.getElementById('m-danger').textContent    = t.danger + ' арт.';
+  document.getElementById('m-warn').textContent      = t.warn   + ' арт.';
+  document.getElementById('m-overstock').textContent = (t.overstock||0) + ' арт.';
+  document.getElementById('m-qty').textContent       = t.to_order_qty.toLocaleString('ru') + ' шт';
+  document.getElementById('m-sum').textContent       = t.to_order_sum > 0 ? t.to_order_sum.toLocaleString('ru') + ' ₽' : '—';
+  renderPlan();
+  // Автоматически загружаем рекомендации → данные идут в план отгрузок
+  await loadRecommendations();
+}
+
+function renderPlan() {
+  var search = (document.getElementById('plan-search').value || '').toLowerCase();
+  var data = planData;
+  if (planFilter !== 'all') data = data.filter(function(p){ return p.status === planFilter; });
+  if (search) data = data.filter(function(p){ return p.sku.toLowerCase().includes(search) || p.name.toLowerCase().includes(search); });
+
+  if (!data.length) {
+    document.getElementById('plan-body').innerHTML = '<tr><td colspan="17" class="empty">Нет товаров</td></tr>';
+    return;
+  }
+
+  var srcIcons = {Китай:'🇨🇳', Россия:'🇷🇺', Турция:'🇹🇷', Европа:'🇪🇺', Другое:'🌍'};
+
+  document.getElementById('plan-body').innerHTML = data.map(function(p) {
+    var bc = p.status === 'danger' ? 'b-danger' : p.status === 'warn' ? 'b-warn' : p.status === 'overstock' ? 'b-overstock' : 'b-ok';
+    var bl = p.status === 'danger' ? 'Срочно' : p.status === 'warn' ? 'Скоро' : p.status === 'overstock' ? 'Пересорт' : 'В норме';
+    var dc = p.days_left < 7 ? '#c0392b' : p.days_left < 14 ? '#d68910' : p.days_left > 30 ? '#7b2d8b' : '#1a1a1a';
+    var pbc = p.purchase_urgency === 'danger' ? '#c0392b' : p.purchase_urgency === 'warn' ? '#d68910' : '#888';
+    var icon = srcIcons[p.source] || '🌍';
+
+    // Остатки по складам из skusData
+    var whHtml = '<span style="color:#ccc">—</span>';
+    var skuInfo = skusData.find(function(s){ return s.sku === p.sku; });
+    if (skuInfo && skuInfo.warehouses) {
+      var whEntries = Object.entries(skuInfo.warehouses)
+        .filter(function(e){ return e[1].stock > 0; })
+        .sort(function(a,b){ return b[1].stock - a[1].stock; });
+      if (whEntries.length) {
+        whHtml = '<div class="wh-dist">' + whEntries.map(function(e) {
+          var wh = e[0], wd = e[1];
+          var pct = p.stock > 0 ? Math.round(wd.stock / p.stock * 100) : 0;
+          var stockColor = wd.stock === 0 ? '#ccc' : pct < 20 ? '#c0392b' : '#1a1a1a';
+          return '<div class="wh-row">' +
+            '<span class="wh-name" title="'+wh+'">'+wh+'</span>' +
+            '<span class="wh-qty" style="color:'+stockColor+'">'+wd.stock+'</span>' +
+            '<span style="color:#aaa;font-size:11px">'+pct+'%</span>' +
+            '<div class="pbar" style="flex:1"><div class="pbar-fill" style="width:'+Math.min(pct,100)+'%;background:'+(pct > 50 ? '#1a1a1a' : '#aaa')+'"></div></div>' +
+            '</div>';
+        }).join('') + '</div>';
+      }
+    }
+
+    var isApproved = approvedSkus.has(p.sku);
+    var rowBg = isApproved ? 'background:#f0faf0' : '';
+    return '<tr style="'+rowBg+'" data-sku="'+p.sku+'">' +
+      '<td style="text-align:center;vertical-align:middle">' +
+        '<input type="checkbox" '+(isApproved?'checked':'')+' onchange="toggleApproved(\''+p.sku+'\',this.checked)" style="display:block;margin:0 auto 4px">' +
+        (isApproved?'<span style="color:#2e7d32;font-size:14px">✓</span>':'<span style="color:#ddd;font-size:13px">—</span>') +
+      '</td>' +
+      '<td class="mono" style="font-size:11px">'+(p.nmid||p.sku)+'</td>' +
+      '<td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="'+(p.name||p.sku)+'">'+p.sku+'</td>' +
+      '<td>'+icon+' '+p.source+'</td>' +
+      '<td style="text-align:center">'+p.lead_days+'</td>' +
+      '<td style="font-size:12px"><b>'+p.spd+'</b> шт/д' +
+        (p.trend_reliable || (p.season_mult && p.season_mult !== 1.0) ?
+          '<div style="font-size:10px;color:#888;margin-top:2px">база: '+p.spd_raw+
+          (p.trend_reliable ? ' <span style="color:'+(p.trend_direction==='up'?'#2e7d32':'#c0392b')+'">'+(p.trend_direction==='up'?'↑':'↓')+Math.abs(Math.round((p.trend_coef-1)*100))+'%</span>' : '') +
+          (p.season_mult && p.season_mult !== 1.0 ? ' <span style="color:'+(p.season_mult>1?'#2e7d32':'#d68910')+'">📅'+(p.season_mult>1?'↑':'↓')+Math.abs(Math.round((p.season_mult-1)*100))+'%</span>' : '') +
+          '</div>' : '') +
+      '</td>' +
+      '<td>'+p.stock.toLocaleString('ru')+'</td>' +
+      '<td style="text-align:center;color:'+(p.ff_stock>0?'#2e7d32':'#ccc')+';font-size:12px">'+(p.ff_stock>0?p.ff_stock:'—')+'</td>' +
+      '<td><b style="color:'+dc+'">'+( p.days_left === 999 ? '∞' : p.days_left)+'</b></td>' +
+      '<td><span class="badge '+bc+'">'+bl+'</span></td>' +
+      '<td style="text-align:center;font-size:12px;color:'+(p.buyout_rate>=80?'#2e7d32':p.buyout_rate>=60?'#d68910':'#c0392b')+'">'+(p.buyout_rate||100).toFixed(0)+'%</td>' +
+      '<td><input class="editable" type="number" min="0" style="width:70px;font-weight:700" value="'+(p.to_order > 0 ? p.to_order : 0)+'" onchange="updToOrder(\''+p.sku+'\',this.value)"></td>' +
+      '<td style="text-align:center;color:#888;font-size:13px">'+(p.box_qty||1)+'</td>' +
+      '<td style="text-align:center;font-weight:600" data-boxes="'+p.sku+'">'+(p.to_order > 0 ? Math.ceil(p.to_order / (p.box_qty||1)).toLocaleString('ru') : '—')+'</td>' +
+      '<td><input class="editable" type="number" min="0" value="'+p.cost+'" onchange="updCost(\''+p.sku+'\',this.value)"></td>' +
+      '<td>'+(p.total_cost > 0 ? p.total_cost.toLocaleString('ru')+' ₽' : '—')+'</td>' +
+      '<td style="min-width:200px">'+whHtml+'</td>' +
+      '</tr>';
+  }).join('');
+}
+
+function filterPlan(f, btn) {
+  planFilter = f;
+  document.querySelectorAll('#page-plan .fbtn').forEach(function(b){ b.classList.remove('active'); });
+  btn.classList.add('active');
+  renderPlan();
+}
+
+
+function toggleApproved(sku, checked) {
+  if (checked) approvedSkus.add(sku); else approvedSkus.delete(sku);
+  // Перекрашиваем строку
+  document.querySelectorAll('#plan-body tr').forEach(function(row) {
+    var cells = row.querySelectorAll('td');
+    if (cells.length < 2) return;
+    var rowSku = cells[1].textContent.trim();
+    if (rowSku === sku) {
+      row.style.background = checked ? '#f0faf0' : '';
+      var inp = cells[0].querySelector('input');
+      if (inp) inp.checked = checked;
+      var spans = cells[0].querySelectorAll('span');
+      if (spans.length) spans[0].outerHTML = checked ? '<span style="color:#2e7d32;font-size:14px">✓</span>' : '<span style="color:#ddd;font-size:13px">—</span>';
+    }
+  });
+  renderApprovedTotals();
+}
+
+function planSelectAll(cb) {
+  // Добавляем/убираем все артикулы из approved
+  planData.forEach(function(p) {
+    if (p.to_order > 0) {
+      if (cb.checked) approvedSkus.add(p.sku); else approvedSkus.delete(p.sku);
+    }
+  });
+  // Перерисовываем план и итого
+  renderPlan();
+  renderApprovedTotals();
+}
+
+function renderApprovedTotals() {
+  var approved = planData.filter(function(p){ return approvedSkus.has(p.sku) && p.to_order > 0; });
+  var el = document.getElementById('approved-totals');
+  if (!el) return;
+
+  if (!approved.length) {
+    el.style.display = 'none';
+    return;
+  }
+  el.style.display = 'block';
+
+  var totalQty  = approved.reduce(function(s,p){ return s + p.to_order; }, 0);
+  var totalBoxes= approved.reduce(function(s,p){ return s + Math.ceil(p.to_order / (p.box_qty||1)); }, 0);
+  var totalSum  = approved.reduce(function(s,p){ return s + p.total_cost; }, 0);
+
+  var rows = approved.map(function(p) {
+    var boxes = Math.ceil(p.to_order / (p.box_qty||1));
+    var bc = p.status === 'danger' ? 'b-danger' : p.status === 'warn' ? 'b-warn' : p.status === 'overstock' ? 'b-overstock' : 'b-ok';
+    return '<tr>' +
+      '<td class="mono" style="font-size:12px">'+(p.nmid||p.sku)+'</td>' +
+      '<td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:13px">'+(p.name||p.sku)+'</td>' +
+      '<td><span class="badge '+bc+'" style="font-size:10px">'+(p.status==='danger'?'Срочно':p.status==='warn'?'Скоро':p.status==='overstock'?'Пересорт':'В норме')+'</span></td>' +
+      '<td style="text-align:right;font-weight:600">'+p.to_order.toLocaleString('ru')+' шт</td>' +
+      '<td style="text-align:center;color:#888">'+( p.box_qty||1)+'</td>' +
+      '<td style="text-align:right;font-weight:600">'+boxes.toLocaleString('ru')+' кор.</td>' +
+      '<td style="text-align:right">'+(p.total_cost > 0 ? p.total_cost.toLocaleString('ru')+' ₽' : '—')+'</td>' +
+      '</tr>';
+  }).join('');
+
+  document.getElementById('approved-totals-body').innerHTML =
+    '<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse">' +
+    '<thead><tr>' +
+    '<th style="font-size:11px;color:#999;font-weight:500;padding:6px 8px;border-bottom:1px solid #e8e8e5;text-align:left">Артикул</th>' +
+    '<th style="font-size:11px;color:#999;font-weight:500;padding:6px 8px;border-bottom:1px solid #e8e8e5;text-align:left">Название</th>' +
+    '<th style="font-size:11px;color:#999;font-weight:500;padding:6px 8px;border-bottom:1px solid #e8e8e5">Статус</th>' +
+    '<th style="font-size:11px;color:#999;font-weight:500;padding:6px 8px;border-bottom:1px solid #e8e8e5;text-align:right">Кол-во</th>' +
+    '<th style="font-size:11px;color:#999;font-weight:500;padding:6px 8px;border-bottom:1px solid #e8e8e5;text-align:center">Крат.</th>' +
+    '<th style="font-size:11px;color:#999;font-weight:500;padding:6px 8px;border-bottom:1px solid #e8e8e5;text-align:right">Коробов</th>' +
+    '<th style="font-size:11px;color:#999;font-weight:500;padding:6px 8px;border-bottom:1px solid #e8e8e5;text-align:right">Сумма ₽</th>' +
+    '</tr></thead><tbody>' + rows + '</tbody>' +
+    '<tfoot><tr style="border-top:2px solid #e8e8e5;background:#f9f9f8">' +
+    '<td colspan="3" style="padding:8px;font-weight:600">Итого согласовано</td>' +
+    '<td style="padding:8px;text-align:right;font-weight:600">'+totalQty.toLocaleString('ru')+' шт</td>' +
+    '<td></td>' +
+    '<td style="padding:8px;text-align:right;font-weight:600">'+totalBoxes.toLocaleString('ru')+' кор.</td>' +
+    '<td style="padding:8px;text-align:right;font-weight:600">'+(totalSum > 0 ? totalSum.toLocaleString('ru')+' ₽' : '—')+'</td>' +
+    '<td></td>' +
+    '</tr></tfoot></table></div>';
+}
+
+var _shipDebounce = null;
+
+function updToOrder(sku, val) {
+  var v = Math.max(0, parseInt(val) || 0);
+  var p = planData.find(function(x){ return x.sku === sku; });
+  if(!p) return;
+  p.to_order = v;
+  // Если вручную указали кол-во > 0 — добавляем в одобренные
+  if(v > 0) approvedSkus.add(sku);
+  else approvedSkus.delete(sku);
+  // Обновляем чекбокс
+  var cb = document.querySelector('input[data-sku="'+sku+'"]');
+  if(cb) cb.checked = v > 0;
+  // Обновляем ячейку коробов
+  var boxQty = p.box_qty || 1;
+  var boxCell = document.querySelector('[data-boxes="'+sku+'"]');
+  if(boxCell) boxCell.textContent = v > 0 ? Math.ceil(v / boxQty).toLocaleString('ru') : '—';
+  // Пересчитываем план отгрузок с дебаунсом 600мс
+  clearTimeout(_shipDebounce);
+  _shipDebounce = setTimeout(function(){
+    loadRecommendations();
+  }, 600);
+}
+
+function updCost(sku, val) {
+  var s = skusData.find(function(s){ return s.sku === sku; });
+  if (s) s.cost = parseFloat(val) || 0;
+}
+function updBoxQty(sku, val) {
+  var s = skusData.find(function(s){ return s.sku === sku; });
+  if (s) {
+    s.box_qty = parseInt(val) || 1;
+    // Пересчитываем количество коробов в строке без перерисовки всей таблицы
+    var rows = document.querySelectorAll('#plan-body tr');
+    rows.forEach(function(row) {
+      var skuCell = row.querySelectorAll('td')[0];
+      if (skuCell && skuCell.textContent.trim() === sku) {
+        var toOrder = parseInt(row.querySelectorAll('td')[8].textContent.replace(/\s/g,'')) || 0;
+        var boxCell = row.querySelectorAll('td')[10];
+        if (boxCell) boxCell.textContent = toOrder > 0 ? Math.ceil(toOrder / s.box_qty).toLocaleString('ru') : '—';
+      }
+    });
+  }
+}
+
+// ═══ SHIPMENT ═══
+var shipTab = 'ship';
+
+
+function renderShipment() {
+  if (!planData.length) return;
+  document.getElementById('shipment-alert').style.display = 'none';
+  document.getElementById('shipment-content').style.display = 'block';
+
+
+  var toOrder = planData.filter(function(p){ return p.to_order > 0 && !isArchived(p.sku); });
+
+  // Используем данные из рекомендаций если они загружены
+  // Иначе рендерим без разбивки по складам
+  var recMap = {};
+  if (recData && recData.length) {
+    recData.forEach(function(r){ recMap[r.sku] = r; });
+  }
+
+  var shipRows = [];
+
+  toOrder.forEach(function(p) {
+    var rec = recMap[p.sku];
+    var toShip = rec ? (rec.to_ship || p.to_order) : p.to_order;
+    var statusBc  = p.days_left < 7 ? 'b-danger' : p.days_left < 14 ? 'b-warn' : p.days_left <= 30 ? 'b-ok' : 'b-overstock';
+    var statusLbl = p.days_left < 7 ? 'Срочно'   : p.days_left < 14 ? 'Скоро'  : p.days_left <= 30 ? 'В норме' : 'Пересорт';
+
+    if (!rec || !rec.distribution || !rec.distribution.length) {
+      // Нет рекомендаций — показываем строку с остатками по складам
+      var skuInfo2 = skusData.find(function(s){ return s.sku === p.sku; });
+      var stockWhs = [];
+      if (skuInfo2 && skuInfo2.warehouses) {
+        Object.entries(skuInfo2.warehouses).forEach(function(e) {
+          if (e[1].stock > 0) stockWhs.push({warehouse: e[0], wh_stock: e[1].stock, qty: 0, cluster: '', boxes: 0, no_history: false});
+        });
+        stockWhs.sort(function(a,b){ return b.wh_stock - a.wh_stock; });
+      }
+
+      if (!stockWhs.length) {
+        shipRows.push(
+          '<tr>' +
+            '<td class="mono">' + (p.nmid||p.sku) + '</td>' +
+            '<td>' + p.sku + '</td>' +
+            '<td style="text-align:right;font-weight:600">' + toShip.toLocaleString('ru') + '</td>' +
+            '<td colspan="3" style="color:#aaa;font-size:12px">Нет данных по складам</td>' +
+            '<td></td>' +
+            '<td><span class="badge ' + statusBc + '" style="font-size:10px">' + statusLbl + '</span></td>' +
+          '</tr>'
+        );
+      } else {
+        stockWhs.forEach(function(w, i) {
+          shipRows.push(
+            '<tr>' +
+              '<td class="mono" style="' + (i>0?'color:#ccc;font-size:11px':'') + '">' + (i===0 ? (p.nmid||p.sku) : '') + '</td>' +
+              '<td style="' + (i>0?'color:#ccc':'') + ';max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' +
+                (i===0 ? '<div style="font-size:13px">' + p.sku + '</div>' : '') +
+              '</td>' +
+              '<td style="text-align:right;font-weight:600">' + (i===0 ? toShip.toLocaleString('ru') : '') + '</td>' +
+              '<td style="font-size:12px"><span style="color:#555">' + w.warehouse + '</span></td>' +
+              '<td style="text-align:center;font-size:12px;color:#2e7d32;font-weight:600">' + w.wh_stock.toLocaleString('ru') + '</td>' +
+              '<td style="text-align:right;color:#bbb">—</td>' +
+              '<td></td>' +
+              '<td>' + (i===0 ? '<span class="badge ' + statusBc + '" style="font-size:10px">' + statusLbl + '</span>' : '') + '</td>' +
+            '</tr>'
+          );
+        });
+      }
+      return;
+    }
+
+    // Собираем все sub_whs из всех кластеров в плоский список
+    var allWhs = [];
+    var whsInDist = new Set();
+
+    // Реальные остатки из skusData — источник истины
+    var skuInfo = skusData.find(function(s){ return s.sku === p.sku; });
+    var realStocks = {};
+    if (skuInfo && skuInfo.warehouses) {
+      Object.entries(skuInfo.warehouses).forEach(function(e) {
+        if (e[1].stock > 0) realStocks[e[0]] = e[1].stock;
+      });
+    }
+
+    rec.distribution.forEach(function(cluster) {
+      if (!cluster.has_warehouse) return;
+      (cluster.sub_whs || []).forEach(function(s) {
+        var realStock = realStocks[s.warehouse] || 0;
+        if (s.qty > 0 || realStock > 0) {
+          allWhs.push({
+            cluster:   cluster.cluster,
+            warehouse: s.warehouse,
+            qty:       s.qty,
+            boxes:     s.boxes,
+            wh_stock:  realStock,
+            no_history: s.no_sales_history
+          });
+          whsInDist.add(s.warehouse);
+        }
+      });
+    });
+
+    // Добавляем склады с остатком, которые не попали в distribution
+    Object.keys(realStocks).forEach(function(wh) {
+      if (!whsInDist.has(wh)) {
+        allWhs.push({
+          cluster:   '',
+          warehouse: wh,
+          qty:       0,
+          boxes:     0,
+          wh_stock:  realStocks[wh],
+          no_history: false
+        });
+      }
+    });
+
+    if (!allWhs.length) {
+      shipRows.push(
+        '<tr>' +
+          '<td class="mono">' + (p.nmid||p.sku) + '</td>' +
+          '<td>' + p.sku + '</td>' +
+          '<td style="text-align:right;font-weight:600">' + toShip.toLocaleString('ru') + '</td>' +
+
+          '<td colspan="3" style="color:#2e7d32;font-size:12px">Достаточно остатков</td>' +
+          '<td></td>' +
+          '<td><span class="badge ' + statusBc + '" style="font-size:10px">' + statusLbl + '</span></td>' +
+        '</tr>'
+      );
+      return;
+    }
+
+    var totalQtyArt = allWhs.reduce(function(s,w){ return s+w.qty; }, 0);
+    var totalStockArt = allWhs.reduce(function(s,w){ return s+(w.wh_stock||0); }, 0);
+
+    allWhs.forEach(function(w, i) {
+      var histBadge = w.no_history ? ' <span style="color:#d68910;font-size:10px">нет ист.</span>' : '';
+      shipRows.push(
+        '<tr>' +
+          '<td class="mono" style="' + (i>0?'color:#ccc;font-size:11px':'') + '">' + (i===0 ? (p.nmid||p.sku) : '') + '</td>' +
+          '<td style="' + (i>0?'color:#ccc':'') + ';max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' +
+            (i===0 ? '<div style="font-size:13px">' + p.sku + '</div>' +
+              '<div style="font-size:11px;margin-top:2px;color:' + (rec && rec.localization_pct >= 60 ? '#27500A' : '#c0392b') + '">' +
+                'Локализация: <b>' + (rec ? rec.localization_pct : '—') + '%</b>' +
+              '</div>' : '') +
+          '</td>' +
+          '<td style="text-align:right;font-weight:600">' + (i===0 ? toShip.toLocaleString('ru') : '') + '</td>' +
+
+          '<td style="font-size:12px">' +
+            '<span style="color:#555">' + w.warehouse + '</span>' +
+            '<span style="color:#aaa;font-size:10px;margin-left:5px">' + w.cluster + '</span>' +
+            histBadge +
+            (w.wh_loc_pct !== undefined ? ' <span style="font-size:10px;font-weight:600;margin-left:5px;color:' + (w.wh_loc_pct >= 60 ? '#27500A' : '#c0392b') + ';background:' + (w.wh_loc_pct >= 60 ? '#EAF3DE' : '#FCEBEB') + ';padding:1px 5px;border-radius:6px">' + w.wh_loc_pct + '%</span>' : '') +
+
+          '</td>' +
+          '<td style="text-align:center;font-size:12px;color:' + (w.wh_stock > 0 ? '#2e7d32' : '#bbb') + ';font-weight:' + (w.wh_stock > 0 ? '600' : '400') + '">' + (w.wh_stock > 0 ? w.wh_stock.toLocaleString('ru') : '—') + '</td>' +
+          '<td style="text-align:right;font-weight:700;font-size:14px;color:#1a6b3c">' + (w.qty > 0 ? w.qty.toLocaleString('ru') : '<span style="color:#bbb">—</span>') + '</td>' +
+          '<td style="text-align:center;font-size:12px">' + (i===0 && rec && rec.forecast_logistics > 0 ? (function(){
+            var curr = rec.avg_logistics || 0;
+            var fore = rec.forecast_logistics;
+            var hasRealLogistics = realLogisticsLoaded && curr > 0;
+            if (!hasRealLogistics) {
+              return '<div style="font-weight:600">' + fore.toFixed(1) + ' ₽</div>';
+            }
+            var diffPct = Math.round((curr - fore) / curr * 100);
+            var diffColor = diffPct > 0 ? '#2e7d32' : diffPct < 0 ? '#c0392b' : '#888';
+            return '<div style="font-weight:600">' + fore.toFixed(1) + ' ₽</div>' +
+              '<div style="font-size:10px;color:' + diffColor + '">' +
+                (diffPct > 0 ? '↓' : diffPct < 0 ? '↑' : '') + ' ' +
+                (diffPct !== 0 ? Math.abs(diffPct) + '% vs ' + curr.toFixed(0) + '₽' : 'без изменений') +
+              '</div>';
+          })() : '') + '</td>' +
+          '<td>' + (i===0 ? '<span class="badge ' + statusBc + '" style="font-size:10px">' + statusLbl + '</span>' : '') + '</td>' +
+        '</tr>'
+      );
+    });
+
+    // Итог по артикулу (возвраты уже учтены в остатках конкретных складов)
+    shipRows.push(
+      '<tr style="background:#f9f9f8;border-top:1px dashed #e8e8e5">' +
+        '<td colspan="4" style="padding:4px 10px;font-size:11px;color:#888;text-align:right">Итого:</td>' +
+        '<td style="text-align:center;font-size:11px;font-weight:600;padding:4px 10px">' + (totalStockArt > 0 ? totalStockArt.toLocaleString('ru') : '—') + '</td>' +
+        '<td style="text-align:right;font-weight:600;padding:4px 10px">' + totalQtyArt.toLocaleString('ru') + '</td>' +
+        '<td colspan="2"></td>' +
+      '</tr>'
+    );
+  });
+
+  document.getElementById('ship-body').innerHTML = shipRows.length
+    ? shipRows.join('')
+    : '<tr><td colspan="8" class="empty">Нет позиций</td></tr>';
+
+  // ── Сводка по складам ──
+  var whMap = {};
+  toOrder.forEach(function(p) {
+    var rec = recMap[p.sku];
+    if (!rec || !rec.distribution) return;
+    rec.distribution.forEach(function(cl) {
+      (cl.sub_whs || []).forEach(function(sw) {
+        if (sw.qty <= 0) return;
+        if (!whMap[sw.warehouse]) whMap[sw.warehouse] = {qty: 0, boxes: 0, arts: []};
+        whMap[sw.warehouse].qty += sw.qty;
+        whMap[sw.warehouse].boxes += Math.ceil(sw.qty / (p.box_qty || 1));
+        whMap[sw.warehouse].arts.push({sku: p.sku, nmid: p.nmid || p.sku, name: p.name || p.sku, qty: sw.qty, boxes: Math.ceil(sw.qty / (p.box_qty || 1))});
+      });
+    });
+  });
+
+  var whSumEl = document.getElementById('wh-summary');
+  var whSumBody = document.getElementById('wh-summary-body');
+  var whNames = Object.keys(whMap).sort(function(a,b){ return whMap[b].qty - whMap[a].qty; });
+
+  if (whNames.length > 0 && whSumEl) {
+    whSumEl.style.display = 'block';
+    whSumBody.innerHTML = whNames.map(function(wh) {
+      var d = whMap[wh];
+      var artRows = d.arts.sort(function(a,b){ return b.qty - a.qty; }).map(function(a) {
+        return '<tr>' +
+          '<td style="font-size:11px;padding:4px 10px;color:#888;font-family:monospace">' + a.nmid + '</td>' +
+          '<td style="font-size:12px;padding:4px 10px">' + a.sku + '</td>' +
+          '<td style="font-size:12px;padding:4px 10px;text-align:right;font-weight:600">' + a.qty.toLocaleString('ru') + ' шт</td>' +
+          '<td style="font-size:12px;padding:4px 10px;text-align:right;color:#888">' + a.boxes.toLocaleString('ru') + ' кор</td>' +
+        '</tr>';
+      }).join('');
+
+      return '<div style="margin-bottom:16px">' +
+        '<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 12px;background:#f9f9f8;border-radius:8px;margin-bottom:6px">' +
+          '<div style="font-weight:600;font-size:14px">🏭 ' + wh + '</div>' +
+          '<div style="display:flex;gap:16px;font-size:13px">' +
+            '<span>' + d.arts.length + ' арт.</span>' +
+            '<span style="font-weight:600">' + d.qty.toLocaleString('ru') + ' шт</span>' +
+            '<span style="color:#888">' + d.boxes.toLocaleString('ru') + ' кор</span>' +
+          '</div>' +
+        '</div>' +
+        '<table style="width:100%">' +
+          '<tr style="border-bottom:1px solid #e8e8e5">' +
+            '<th style="font-size:11px;padding:4px 10px;text-align:left;color:#888;font-weight:500">Артикул WB</th>' +
+            '<th style="font-size:11px;padding:4px 10px;text-align:left;color:#888;font-weight:500">Название</th>' +
+            '<th style="font-size:11px;padding:4px 10px;text-align:right;color:#888;font-weight:500">К отгрузке</th>' +
+            '<th style="font-size:11px;padding:4px 10px;text-align:right;color:#888;font-weight:500">Коробов</th>' +
+          '</tr>' +
+          artRows + '</table>' +
+      '</div>';
+    }).join('');
+  } else if (whSumEl) {
+    whSumEl.style.display = 'none';
+  }
+}
+
+
+
+// ═══ PRODUCTS ═══
+function renderProds() {
+  updateMinSalesBtn();  // синхронизируем кнопку при каждом рендере
+  var search = (document.getElementById('prod-search').value || '').toLowerCase();
+  var data = skusData;
+  if (prodFilter === 'active')   data = data.filter(function(s){ return !s.archived; });
+  if (prodFilter === 'archived') data = data.filter(function(s){ return  s.archived; });
+  if (search) data = data.filter(function(s){ return s.sku.toLowerCase().includes(search) || s.name.toLowerCase().includes(search); });
+  if (hideMinSales) data = data.filter(function(s){ return (s.orders_count || s.sales || 0) >= 30; });
+
+  var ac = skusData.filter(function(s){ return !s.archived; }).length;
+  var arc = skusData.filter(function(s){ return  s.archived; }).length;
+  document.getElementById('prod-count').textContent = 'Активных: '+ac+' · Скрытых: '+arc;
+
+  var sources = ['Россия','Китай'];
+
+  document.getElementById('prod-body').innerHTML = data.length ? data.map(function(s) {
+    var isArc = !!s.archived;
+    var chk = selectedSkus.has(s.sku) ? 'checked' : '';
+    var dis = isArc ? 'disabled' : '';
+    var dc = s.days_left < 14 ? '#c0392b' : s.days_left < 30 ? '#d68910' : '#1a1a1a';
+    var srcOpts = sources.map(function(o){ return '<option value="'+o+'"'+(( s.source||'Россия')===o?' selected':'')+'>'+o+'</option>'; }).join('');
+    return '<tr style="'+(isArc?'opacity:.45':'')+'">' +
+      '<td class="mono">'+(s.nmid||s.sku)+'</td>' +
+      '<td style="max-width:180px;overflow:hidden;text-overflow:ellipsis" title="'+s.sku+'">'+s.sku+'</td>' +
+      '<td>'+(s.orders_count||0)+'<div style="font-size:10px;color:#888">'+(s.sales||0)+' прод</div></td>' +
+      '<td style="color:#555;font-size:12px">'+(s.spd > 0 ? '<b>'+s.spd+'</b> шт/д' : '—')+'</td>' +
+      '<td style="color:#888;font-size:12px">'+(s.spd_sales > 0 ? s.spd_sales+' шт/д' : '—')+'</td>' +
+      '<td>'+s.stock_total.toLocaleString('ru')+'</td>' +
+      '<td><b style="color:'+dc+'">'+( s.days_left===999?'∞':Math.round(s.days_left))+'</b></td>' +
+      '<td style="text-align:center;font-size:12px;color:'+(s.buyout_rate>=80?'#2e7d32':s.buyout_rate>=60?'#d68910':'#c0392b')+'">'+((s.buyout_rate||100).toFixed(0))+'%</td>' +
+      '<td style="text-align:center;font-size:12px;color:#555">'+(s.volume_l > 0 ? s.volume_l.toFixed(1) : '—')+'</td>' +
+      '<td style="text-align:center;font-size:12px;color:#555">'+(s.avg_logistics > 0 ? s.avg_logistics.toFixed(1) : '—')+'</td>' +
+      '<td><input class="editable" type="number" min="0" value="'+(s.cost||'')+'" placeholder="0" onchange="updCost(\''+s.sku+'\',this.value)" '+dis+'></td>' +
+      '<td><input class="editable" type="number" min="0" style="width:60px" value="'+(s.ff_stock||0)+'" onchange="updFFStock(\''+s.sku+'\',this.value)" title="Количество на вашем складе (ФФ под WB)" '+dis+'></td>' +
+      '<td><select class="editable" style="width:85px" onchange="updSource(\''+s.sku+'\',this.value)" '+dis+'>'+srcOpts+'</select></td>' +
+      '<td><input class="editable" type="number" min="1" max="365" style="width:55px" value="'+(s.lead_days||2)+'" onchange="updLead(\''+s.sku+'\',this.value)" '+dis+'></td>' +
+      '<td><input class="editable" type="number" min="1" style="width:55px" value="'+(s.box_qty||1)+'" onchange="updBoxQty(\''+s.sku+'\',this.value)" title="Штук в коробке" '+dis+'></td>' +
+      
+      
+
+      '<td style="text-align:center"><button class="btn btn-sm" style="font-size:11px;padding:3px 8px" onclick="toggleArc(\''+s.sku+'\')">'+(isArc?'Вернуть':'Скрыть')+'</button></td>' +
+      '</tr>';
+  }).join('') : '<tr><td colspan="15" class="empty">Нет товаров</td></tr>';
+
+  updateBulk();
+}
+
+function filterProds(f, btn) {
+  prodFilter = f;
+  document.querySelectorAll('#page-products .fbtn').forEach(function(b){ b.classList.remove('active'); });
+  btn.classList.add('active');
+  selectedSkus.clear();
+  renderProds();
+}
+
+function toggleSku(sku, checked) {
+  if (checked) selectedSkus.add(sku); else selectedSkus.delete(sku);
+  updateBulk();
+}
+
+function selectAll(cb) {
+  document.querySelectorAll('#prod-body input[type=checkbox]').forEach(function(el){
+    el.checked = cb.checked;
+    var sku = el.closest('tr') && el.closest('tr').querySelectorAll('td')[1] && el.closest('tr').querySelectorAll('td')[1].textContent;
+    if (sku) { if (cb.checked) selectedSkus.add(sku); else selectedSkus.delete(sku); }
+  });
+  updateBulk();
+}
+
+function updateBulk() {
+  var bar = document.getElementById('bulk-bar');
+  var cnt = document.getElementById('sel-count');
+  if (selectedSkus.size > 0) {
+    bar.style.display = 'block';
+    cnt.textContent = 'Выбрано: '+selectedSkus.size;
+  } else {
+    bar.style.display = 'none';
+  }
+}
+
+function toggleArc(sku) {
+  var s = skusData.find(function(s){ return s.sku === sku; });
+  if (s) s.archived = !s.archived;
+  renderProds();
+  refreshAfterArchive();
+}
+
+function bulkArchive(archive) {
+  selectedSkus.forEach(function(sku){
+    var s = skusData.find(function(s){ return s.sku === sku; });
+    if (s) s.archived = archive;
+  });
+  selectedSkus.clear();
+  renderProds();
+  refreshAfterArchive();
+  toast(archive ? 'Скрыто' : 'Восстановлено');
+}
+
+function toggleMinSales() {
+  hideMinSales = !hideMinSales;
+  updateMinSalesBtn();
+  renderProds();
+}
+
+function updateMinSalesBtn() {
+  var btn = document.getElementById('btn-min-sales');
+  if (!btn) return;
+  btn.style.background  = hideMinSales ? '#1a1a1a' : '';
+  btn.style.color       = hideMinSales ? '#fff' : '';
+  btn.style.borderColor = hideMinSales ? '#1a1a1a' : '';
+  btn.textContent       = hideMinSales ? 'Показать <30 продаж' : 'Скрыть <30 продаж';
+}
+
+function updSource(sku, val) {
+  var s = skusData.find(function(s){ return s.sku === sku; });
+  if (!s) return;
+  s.source = val;
+  // Автоматически проставляем плечо по умолчанию
+  var defaultLead = val === 'Китай' ? 30 : 2;
+  s.lead_days = defaultLead;
+  // Обновляем поле плеча в строке таблицы
+  var rows = document.querySelectorAll('#prod-body tr');
+  rows.forEach(function(row) {
+    var skuCell = row.querySelectorAll('td')[1];
+    if (skuCell && skuCell.textContent.trim() === sku) {
+      var leadInput = row.querySelectorAll('input[type=number]')[2];
+      if (leadInput) leadInput.value = defaultLead;
+    }
+  });
+}
+
+function updLead(sku, val) {
+  var s = skusData.find(function(s){ return s.sku === sku; });
+  if (s) s.lead_days = parseInt(val) || 14;
+}
+
+function updFFStock(sku, val) {
+  var s = skusData.find(function(s){ return s.sku === sku; });
+  if (s) s.ff_stock = parseInt(val) || 0;
+}
+
+function parsePrice(raw) {
+  var s = String(raw || '').replace(/"/g,'').replace(/'/g,'').trim();
+  s = s.replace(/[a-zA-Za-яА-ЯёЁ]+\.?/g, '');
+  s = s.replace(/\s/g, '').trim();
+  if (s.indexOf(',') !== -1 && s.indexOf('.') !== -1) {
+    s = s.replace(/,/g, '');
+  } else {
+    s = s.replace(/,/g, '.');
+  }
+  return parseFloat(s) || 0;
+}
+
+async function importPricesFile(input) {
+  var file = input.files[0];
+  if (!file) return;
+  var formData = new FormData();
+  formData.append('file', file);
+  try {
+    var resp = await fetch('/api/import_prices', {method: 'POST', body: formData});
+    var r = await resp.json();
+    if (r.ok) {
+      // Обновляем skusData из ответа
+      r.updated.forEach(function(u) {
+        var s = skusData.find(function(x){ return String(x.nmid) === String(u.nmid); });
+        if (s) {
+          if (u.cost > 0) s.cost = u.cost;
+          if (u.ff_stock >= 0) s.ff_stock = u.ff_stock;
+          if (u.box_qty > 0) s.box_qty = u.box_qty;
+        }
+      });
+      renderProds();
+      toast('Загружено: ' + r.matched + ' позиций. Не найдено: ' + r.not_found);
+      if (r.matched > 0) saveSkus();
+    } else {
+      toast(r.error || 'Ошибка импорта');
+    }
+  } catch(e) {
+    toast('Ошибка: ' + e.message);
+  }
+  input.value = '';
+}
+
+
+async function saveSkus() {
+  var params = {};
+  skusData.forEach(function(s){
+    params[s.sku] = {cost: s.cost||0, dims: s.dims||{}, archived: !!s.archived, source: s.source||'Россия', lead_days: s.lead_days||2, box_qty: s.box_qty||1, ff_stock: s.ff_stock||0};
+  });
+  await api('/api/save_sku_params', {params: params});
+  refreshAfterArchive();
+  toast('Сохранено');
+}
+
+// Проверить скрыт ли товар
+function isArchived(sku) {
+  var s = skusData.find(function(s){ return s.sku === sku; });
+  return s ? !!s.archived : false;
+}
+
+// Обновить план и отгрузки после изменения архива
+async function refreshAfterArchive() {
+  // 1. Сначала сохраняем актуальный статус archived на сервер
+  var params = {};
+  skusData.forEach(function(s){
+    params[s.sku] = {cost: s.cost||0, dims: s.dims||{}, archived: !!s.archived, source: s.source||'Россия', lead_days: s.lead_days||2, box_qty: s.box_qty||1};
+  });
+  await api('/api/save_sku_params', {params: params});
+
+  // 2. Обновляем локализацию
+
+
+  // 3. Если план уже был рассчитан — пересчитываем
+  if (planData.length > 0) {
+    await calcPlan();
+  }
+}
+
+// ═══ EXPORT ═══
+function exportApprovedCSV() {
+  var approved = planData.filter(function(p){ return approvedSkus.has(p.sku) && p.to_order > 0; });
+  if (!approved.length) { toast('Нет согласованных позиций'); return; }
+  var header = ['Артикул','Название','Статус','Заказать шт','Кратность','Коробов','Себест','Сумма ₽'].join(';');
+  var rows = approved.map(function(p){
+    return [p.sku, p.name,
+      p.status==='danger'?'Срочно':p.status==='warn'?'Скоро':p.status==='overstock'?'Пересорт':'В норме',
+      p.to_order, p.box_qty||1, Math.ceil(p.to_order/(p.box_qty||1)),
+      p.cost, p.total_cost].join(';');
+  }).join('\n');
+  dlCSV(header+'\n'+rows, 'wb_approved');
+}
+
+function exportPlanCSV() {
+  var header = ['Артикул','Название','Источник','Плечо','Заказ/день','Остаток','Дней','Статус','Заказать','Себест','Сумма','Склады'].join(';');
+  var rows = planData.map(function(p){
+    return [p.sku, p.name, p.source, p.lead_days, p.spd, p.stock,
+      p.days_left===999?'∞':p.days_left,
+      p.status==='danger'?'Срочно':p.status==='warn'?'Скоро':'В норме',
+      p.to_order, p.cost, p.total_cost,
+      (p.wh_distribution||[]).map(function(w){ return w.warehouse+':'+w.qty; }).join(' | ')
+    ].join(';');
+  }).join('\n');
+  dlCSV(header+'\n'+rows, 'wb_plan');
+}
+
+function exportShipCSV() {
+  var header = ['Артикул','Название','Заказать','Склад','Кол-во'].join(';');
+  var rows = [];
+  planData.filter(function(p){ return p.to_order > 0; }).forEach(function(p){
+    var whs = p.wh_distribution || [];
+    if (!whs.length) {
+      rows.push([p.sku, p.name, p.to_order, '', ''].join(';'));
+    } else {
+      whs.forEach(function(w, i){
+        rows.push([i===0?p.sku:'', i===0?p.name:'', i===0?p.to_order:'', w.warehouse, w.qty].join(';'));
+      });
+    }
+  });
+  dlCSV(header+'\n'+rows.join('\n'), 'wb_shipment');
+}
+
+function dlCSV(content, name) {
+  var blob = new Blob(['\ufeff'+content], {type:'text/csv;charset=utf-8'});
+  var a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = name+'_'+new Date().toISOString().slice(0,10)+'.csv';
+  a.click();
+}
+
+function exportWhSummaryCSV() {
+  var toOrder = planData.filter(function(p){ return p.to_order > 0 && !isArchived(p.sku); });
+  var recMap = {};
+  if (recData && recData.length) recData.forEach(function(r){ recMap[r.sku] = r; });
+
+  // Собираем данные по складам
+  var whMap = {};
+  toOrder.forEach(function(p) {
+    var rec = recMap[p.sku];
+    if (!rec || !rec.distribution) return;
+    rec.distribution.forEach(function(cl) {
+      (cl.sub_whs || []).forEach(function(sw) {
+        if (sw.qty <= 0) return;
+        if (!whMap[sw.warehouse]) whMap[sw.warehouse] = [];
+        whMap[sw.warehouse].push({
+          sku: p.sku,
+          nmid: p.nmid || p.sku,
+          name: p.name || p.sku,
+          qty: sw.qty,
+          boxes: Math.ceil(sw.qty / (p.box_qty || 1)),
+          box_qty: p.box_qty || 1
+        });
+      });
+    });
+  });
+
+  var header = ['Склад','Артикул WB','Артикул продавца','Название','К отгрузке шт','Кратность','Коробов'].join(';');
+  var rows = [];
+  var whKeys = Object.keys(whMap).sort(function(a,b){ return (whMap[b].reduce(function(s,x){return s+x.qty},0)) - (whMap[a].reduce(function(s,x){return s+x.qty},0)); });
+  whKeys.forEach(function(wh, idx) {
+    if (idx > 0) rows.push(';;;;;;;');  // пустая строка-разделитель между складами
+    var whTotal = whMap[wh].reduce(function(s,a){ return s+a.qty; }, 0);
+    var whBoxes = whMap[wh].reduce(function(s,a){ return s+a.boxes; }, 0);
+    rows.push(['=== ' + wh + ' ===','','',whMap[wh].length + ' арт.',whTotal + ' шт','',whBoxes + ' кор'].join(';'));
+    whMap[wh].sort(function(a,b){ return b.qty - a.qty; }).forEach(function(a) {
+      rows.push([wh, a.nmid, a.sku, a.name, a.qty, a.box_qty, a.boxes].join(';'));
+    });
+  });
+
+  if (!rows.length) { toast('Нет данных для экспорта'); return; }
+  dlCSV(header + '\n' + rows.join('\n'), 'wb_сводка_по_складам');
+}
+
+// ═══ RECOMMENDATIONS ═══
+var recData   = [];
+var recFilter = 'all';
+
+async function loadRecommendations() {
+  // План уже пересчитан (вызывается из calcPlan)
+  if (!planData.length) { toast('Сначала рассчитайте план'); return; }
+
+  var shipT = document.getElementById('ship-target');
+  var target = parseFloat((shipT && shipT.value)) || 60;
+
+  var toOrderMap = {};
+  planData.forEach(function(p){ if (p.to_order > 0) toOrderMap[p.sku] = p.to_order; });
+
+  var horizon = parseInt(document.getElementById('p-horizon') && document.getElementById('p-horizon').value)
+             || parseInt(document.getElementById('period-select') && document.getElementById('period-select').value)
+             || 30;
+
+  var safetyDays = parseInt(document.getElementById('p-safety') && document.getElementById('p-safety').value) || 3;
+
+  var r = await api('/api/recommend_warehouses', {target_local: target, to_order: toOrderMap, horizon: horizon, safety_days: safetyDays});
+  if (!r.ok) { toast(r.error || 'Ошибка рекомендаций'); return; }
+
+  recData = r.recommendations;
+
+  // Синхронизируем to_order в плане закупок с реальными дефицитами из рекомендаций
+  if (recData && recData.length) {
+    var recMap2 = {};
+    recData.forEach(function(rec){ recMap2[rec.sku] = rec; });
+    planData.forEach(function(p) {
+      var rec = recMap2[p.sku];
+      if (rec && rec.to_order !== undefined) {
+        p.to_order = rec.to_order;
+        p.total_cost = Math.round(p.to_order * (p.cost || 0));
+      }
+    });
+    renderPlan();
+  }
+
+  // Обновляем план отгрузок — основное назначение
+  renderShipment();
+}
+
+function filterRec(f, btn) {
+  recFilter = f;
+  document.querySelectorAll('#page-recommend .fbtn').forEach(function(b){ b.classList.remove('active'); });
+  btn.classList.add('active');
+  renderRec();
+}
+
+function renderRec() {
+  var search = (document.getElementById('rec-search').value || '').toLowerCase();
+  var shipT = document.getElementById('ship-target');
+  var target = parseFloat((shipT && shipT.value)) || 60;
+  var data   = recData;
+
+  if (recFilter === 'bad')      data = data.filter(function(d){ return d.localization_pct < target; });
+  if (recFilter === 'critical') data = data.filter(function(d){ return d.localization_pct < 30; });
+  if (search) data = data.filter(function(d){
+    return (d.nmid||'').includes(search) || d.sku.toLowerCase().includes(search);
+  });
+
+  if (!data.length) {
+    document.getElementById('rec-body').innerHTML = '<div class="empty" style="padding:40px">Нет данных</div>';
+    return;
+  }
+
+  document.getElementById('rec-body').innerHTML = data.map(function(d) {
+    var locColor = d.localization_pct >= target ? '#27500A' : d.localization_pct >= 30 ? '#854F0B' : '#791F1F';
+    var locBg    = d.localization_pct >= target ? '#EAF3DE' : d.localization_pct >= 30 ? '#FAEEDA' : '#FCEBEB';
+
+    var distRows = d.distribution.map(function(w) {
+      // Строка кластера без нашего склада
+      if (!w.has_warehouse) {
+        return '<tr style="background:#fff8f0">' +
+          '<td style="padding:8px 12px;font-size:12px;font-weight:600;color:#854F0B">' + w.cluster + '</td>' +
+          '<td style="padding:8px 12px;text-align:center;font-size:12px;color:#888">' + w.buyers + ' (' + w.buyer_pct + '%)</td>' +
+          '<td style="padding:8px 12px;text-align:center;font-size:12px;color:#d68910" colspan="5">⚠ нет нашего склада</td>' +
+        '</tr>';
+      }
+      // Строка кластера (итог по кластеру)
+      var badge = w.no_history ? ' <span style="background:#FAEEDA;color:#854F0B;font-size:10px;padding:1px 6px;border-radius:8px;vertical-align:middle">нет истории</span>' : '';
+      var clusterRow =
+        '<tr style="background:#eef2ff;border-top:1px solid #d8e0f8">' +
+          '<td style="padding:7px 12px;font-size:12px;font-weight:700;color:#1a2b6b">' + w.cluster + badge + '</td>' +
+          '<td style="padding:7px 12px;text-align:center;font-size:12px;font-weight:600;color:#444">' + w.buyers + '<br><span style="font-weight:400;color:#999;font-size:11px">' + w.buyer_pct + '% покупателей</span></td>' +
+          '<td style="padding:7px 12px;text-align:center;font-size:12px;color:#888">—</td>' +
+          '<td style="padding:7px 12px;text-align:center;font-size:12px;font-weight:600;color:#333">' + w.qty_needed + '</td>' +
+          '<td style="padding:7px 12px;text-align:center;font-size:13px;font-weight:700;color:#1a6b3c">' + w.qty + '</td>' +
+          '<td style="padding:7px 12px;text-align:center;font-size:12px;font-weight:600;color:#555">' + w.boxes + '</td>' +
+          '<td style="padding:7px 12px;text-align:right;font-size:12px;color:#aaa">—</td>' +
+        '</tr>';
+      // Строки складов внутри кластера
+      var subRows = (w.sub_whs || []).map(function(s) {
+        var salesCell = s.no_sales_history
+          ? '<span style="color:#d68910;font-size:11px">нет истории</span>'
+          : s.sales + ' прод.<br><span style="color:#aaa;font-size:11px">' + s.sales_pct + '% отгрузок</span>';
+        return '<tr style="background:#fff;border-bottom:0.5px solid #f0f0ee">' +
+          '<td style="padding:6px 12px 6px 24px;font-size:12px;color:#333">↳ ' + s.warehouse + '</td>' +
+          '<td style="padding:6px 12px;text-align:center;font-size:12px;color:#888">' + salesCell + '</td>' +
+          '<td style="padding:6px 12px;text-align:center;font-size:12px;color:' + (s.wh_stock > 0 ? '#2e7d32' : '#bbb') + ';font-weight:' + (s.wh_stock > 0 ? '600' : '400') + '">' + (s.wh_stock > 0 ? s.wh_stock : '0') + '</td>' +
+          '<td style="padding:6px 12px;text-align:center;font-size:12px;color:#666">' + s.qty_needed + '</td>' +
+          '<td style="padding:6px 12px;text-align:center;font-size:13px;font-weight:600;color:' + (s.qty > 0 ? '#1a6b3c' : '#bbb') + '">' + (s.qty > 0 ? s.qty.toLocaleString('ru') : '—') + '</td>' +
+          '<td style="padding:6px 12px;text-align:center;font-size:12px;color:#666">' + (s.boxes > 0 ? s.boxes : '—') + '</td>' +
+          '<td style="padding:6px 12px;text-align:right;font-size:12px;color:#aaa">' + (s.logistics_cost > 0 ? s.logistics_cost + ' ₽' : '—') + '</td>' +
+        '</tr>';
+      }).join('');
+      return clusterRow + subRows;
+    }).join('');
+
+    var totalQty = d.distribution.reduce(function(s,w){ return s+w.qty; }, 0);
+    var totalBox = d.distribution.reduce(function(s,w){ return s+w.boxes; }, 0);
+
+    return '<div class="card" style="margin-bottom:12px;padding:0;overflow:hidden">' +
+      // Шапка
+      '<div style="padding:12px 16px;border-bottom:0.5px solid #e8e8e5;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">' +
+        '<div style="display:flex;align-items:center;gap:10px">' +
+          '<span class="mono" style="font-weight:600;font-size:14px">' + (d.nmid||d.sku) + '</span>' +
+          '<span style="color:#888;font-size:13px">' + d.sku + '</span>' +
+        '</div>' +
+        '<div style="display:flex;gap:10px;align-items:center">' +
+          '<div style="background:' + locBg + ';padding:4px 12px;border-radius:20px;font-size:13px">' +
+            '<b style="color:' + locColor + '">' + d.localization_pct + '%</b>' +
+            '<span style="color:' + locColor + ';margin-left:4px">локализация</span>' +
+          '</div>' +
+          '<div style="background:#f5f5f3;padding:4px 12px;border-radius:20px;font-size:12px;color:#666">' +
+            'КТР: ' + d.ktr.toFixed(2) + ' · ИРП: ' + d.krp + '%' +
+          '</div>' +
+          (d.to_order > 0 ? '<span style="background:#EAF3DE;color:#27500A;padding:4px 12px;border-radius:20px;font-size:12px">▶ ' + d.to_order.toLocaleString('ru') + ' шт</span>' : '') +
+        '</div>' +
+      '</div>' +
+      // Мини-метрики
+      '<div style="padding:6px 16px;background:#f9f9f8;font-size:12px;color:#888;border-bottom:0.5px solid #e8e8e5;display:flex;gap:16px">' +
+        '<span>Продажи: <b style="color:#1a1a1a">' + d.spd + ' шт/д</b></span>' +
+        
+        '<span>Выкуп: <b style="color:#1a1a1a">' + d.buyout_rate + '%</b></span>' +
+        '<span>Заказов за период: <b style="color:#1a1a1a">' + (d.total_orders||d.total_buyers) + '</b></span>' +
+        '<span>С наших складов: <b style="color:' + locColor + '">' + (d.our_orders||d.local_buyers) + ' (' + d.localization_pct + '%)</b></span>' +
+      '</div>' +
+      // Таблица
+      '<table style="width:100%;border-collapse:collapse;table-layout:fixed">' +
+        '<thead><tr style="background:#f5f5f3">' +
+          '<th style="padding:7px 12px;font-size:11px;color:#999;font-weight:600;text-align:left;width:26%">Кластер / Склад</th>' +
+          '<th style="padding:7px 12px;font-size:11px;color:#999;font-weight:600;text-align:center;width:16%">Покупатели / Продажи</th>' +
+          '<th style="padding:7px 12px;font-size:11px;color:#999;font-weight:600;text-align:center;width:10%">Остаток, шт</th>' +
+          '<th style="padding:7px 12px;font-size:11px;color:#999;font-weight:600;text-align:center;width:12%">Нужно, шт</th>' +
+          '<th style="padding:7px 12px;font-size:11px;color:#999;font-weight:600;text-align:center;width:14%">К отгрузке, шт</th>' +
+          '<th style="padding:7px 12px;font-size:11px;color:#999;font-weight:600;text-align:center;width:10%">Коробов</th>' +
+          '<th style="padding:7px 12px;font-size:11px;color:#999;font-weight:600;text-align:right;width:12%">Лог. ₽/шт</th>' +
+        '</tr></thead>' +
+        '<tbody>' + distRows +
+          (d.to_order > 0 ? '<tr style="background:#f5f5f3;font-weight:600">' +
+            '<td colspan="4" style="padding:8px 12px;font-size:12px">Итого к отгрузке</td>' +
+            '<td style="padding:8px 12px;text-align:center;color:#1a6b3c">' + totalQty.toLocaleString('ru') + ' шт</td>' +
+            '<td style="padding:8px 12px;text-align:center;color:#666">' + totalBox + ' кор.</td>' +
+            '<td></td></tr>' : '') +
+        '</tbody>' +
+      '</table>' +
+    '</div>';
+  }).join('');
+}
+
+// ═══ HELPERS ═══// ═══ HELPERS ═══// ═══ HELPERS ═══
+async function api(url, body) {
+  try {
+    var r = await fetch(url, {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body)});
+    return await r.json();
+  } catch(e) {
+    return {ok: false, error: e.message};
+  }
+}
+
+function showAlert(id, msg, type) {
+  var el = document.getElementById(id);
+  if (!el) return;
+  el.className = 'alert ' + (type === 'err' ? 'a-err' : type === 'ok' ? 'a-ok' : 'a-info');
+  el.textContent = msg;
+  el.style.display = 'block';
+  if (type === 'ok') setTimeout(function(){ el.style.display='none'; }, 3000);
+}
+
+function toast(msg) {
+  var t = document.createElement('div');
+  t.textContent = msg;
+  t.style.cssText = 'position:fixed;bottom:24px;right:24px;background:#1a1a1a;color:#fff;padding:10px 18px;border-radius:8px;font-size:13px;z-index:9999';
+  document.body.appendChild(t);
+  setTimeout(function(){ t.remove(); }, 2500);
+}
+updatePeriodDates();
+
+
+
+
+</script>
+</body>
+</html>
